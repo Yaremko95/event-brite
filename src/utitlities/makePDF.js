@@ -1,7 +1,7 @@
 const pdfMakePrinter = require('pdfmake/src/printer');
 const fs = require('fs');
 
-const  generatePdf = async (fileName, content) => {
+const  generatePdf = async (fileName, content, successCallback, errorCallback) => {
 
         const fonts = {
             Courier: {
@@ -29,10 +29,26 @@ const  generatePdf = async (fileName, content) => {
                 normal: 'ZapfDingbats'
             }
         };
-
+try{
         const printer = new pdfMakePrinter(fonts);
         const doc = await printer.createPdfKitDocument(content);
-        return doc;
+        //return doc;
+
+            doc.pipe(
+                fs.createWriteStream(fileName).on("error", (err) => {
+                    errorCallback(err.message);
+                })
+            );
+
+            doc.on('end', () => {
+                successCallback("PDF successfully created and stored");
+            });
+
+            doc.end();
+
+        } catch(err) {
+            throw(err);
+        }
 
 
 };

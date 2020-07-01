@@ -1,7 +1,7 @@
 const pdfMakePrinter = require('pdfmake/src/printer');
 const fs = require('fs');
 
-const  generatePdf = async (fileName) => {
+const  generatePdf = async (fileName, content) => {
 
         const fonts = {
             Courier: {
@@ -29,17 +29,9 @@ const  generatePdf = async (fileName) => {
                 normal: 'ZapfDingbats'
             }
         };
-        const docDefinition = {
-            content: [
-                'First paragraph',
-                'Another paragraph, this time a little bit longer to make sure, this line will be divided into at least two lines',
-            ],
-            defaultStyle: {
-                font: 'Helvetica'
-            }
-        };
+
         const printer = new pdfMakePrinter(fonts);
-        const doc = await printer.createPdfKitDocument(docDefinition);
+        const doc = await printer.createPdfKitDocument(content);
         return doc;
 
 

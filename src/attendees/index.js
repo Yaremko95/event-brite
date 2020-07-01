@@ -2,7 +2,7 @@ const express = require ('express')
 const {writeFile, readFile} = require("../utitlities")
 const { check, param, body, validationResult } = require("express-validator");
 const sgMail = require('@sendgrid/mail');
-const {generatePdf} = require('../utitlities/makePDF')
+const {generatePdf, writePdf} = require('../utitlities/makePDF')
 const {join} = require('path')
 const directory = join(__dirname, "attendees.json")
 const fs = require('fs')
@@ -10,7 +10,6 @@ const fs = require('fs')
 const uniqueEmail = async (req, resp, next) => {
     const data = await  readFile(directory);
     const { email } = req.body;
-    console.log(email )
 
     if (
         data.filter((user) => user.email === email)
@@ -55,41 +54,73 @@ router.route("/sendEmail")
         };
         const pdfFolderPath = join(__dirname, `../docs/${req.body.surname}.pdf`)
        const doc = await generatePdf(pdfFolderPath, docDefinition)
-      await doc.pipe(
+        doc.pipe(
             fs.createWriteStream(pdfFolderPath).on("error", (err) => {
                 console.log(err)
             })
-        );
-
-        doc.on('end', () => {
+        )
+            doc.on('end', () => {
             console.log("PDF successfully created and stored");
+
         });
 
+
+
         doc.end();
+        setTimeout(()=> {
+            sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+            console.log('hi')
+            fs.readFile(pdfFolderPath, function(err, data) {
 
-        const bitmap = await fs.readFileSync(pdfFolderPath);
-        let data_base64 = await new Buffer(bitmap).toString('base64')
+                let data_base64 = data.toString('base64')
 
-        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-        const msg = {
-            to: 'tetianayaremko@gmail.com',
-            from: 'ty000002@red.ujaen.es',
-            subject: 'Sending with Twilio SendGrid is Fun',
-            text: 'and easy to do anywhere, even with Node.js',
-                attachments :
-                    [{filename: 'Report.pdf',
-                    content: data_base64,
-                    type: 'application/pdf',
-                    disposition: 'attachment',
+                sgMail.send({
+                    to: 'tetianayaremko@gmail.com',
+                    from: 'ty000002@red.ujaen.es',
+                    subject: 'Report',
+                    text: 'report',
+                    attachments: [{
+                        filename: 'Report.pdf',
+                        content: data_base64,
+                        type: 'application/pdf',
+                        disposition: 'attachment',
 
-                }],
-        };
-       await  sgMail.send(msg).then((response) => {
-             res.status(200).send('Success');
-         })
-             .catch((err) => {
-                 res.status(500).send(err);
-             });
+                    }],
+                }).then((response) => {
+                    res.status(200).send('Success');
+                })
+                    .catch((err) => {
+                        res.status(500).send(err);
+                    });
+            })
+        },  3000)
+
+
+
+
+       //  const bitmap = await fs.readFileSync(pdfFolderPath);
+       //  let data_base64 = await new Buffer(bitmap).toString('base64')
+       //
+       //  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+       //  const msg = {
+       //      to: 'tetianayaremko@gmail.com',
+       //      from: 'ty000002@red.ujaen.es',
+       //      subject: 'Sending with Twilio SendGrid is Fun',
+       //      text: 'and easy to do anywhere, even with Node.js',
+       //          attachments :
+       //              [{filename: 'Report.pdf',
+       //              content: data_base64,
+       //              type: 'application/pdf',
+       //              disposition: 'attachment',
+       //
+       //          }],
+       //  };
+       // await  sgMail.send(msg).then((response) => {
+       //       res.status(200).send('Success');
+       //   })
+       //       .catch((err) => {
+       //           res.status(500).send(err);
+       //       });
         // res.contentType("application/pdf");
         // response.pipe(res);
         // response.end();

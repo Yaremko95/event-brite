@@ -37,4 +37,18 @@ const  generatePdf = async (fileName, content) => {
 
 };
 
-module.exports = {generatePdf}
+const writePdf = async (doc, pdfFolderPath) => {
+    doc.pipe(
+         fs.createWriteStream(pdfFolderPath).on("error", (err) => {
+            console.log(err)
+        })
+    );
+
+    doc.on('end', () => {
+        console.log("PDF successfully created and stored");
+    });
+
+      doc.end();
+}
+
+module.exports = {generatePdf, writePdf}

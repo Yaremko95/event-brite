@@ -1,7 +1,7 @@
 const express = require ('express')
 const {writeFile, readFile} = require("../utitlities")
 const { check, param, body, validationResult } = require("express-validator");
-
+const {generatePdf} = require('../utitlities/makePDF')
 const {join} = require('path')
 const directory = join(__dirname, "attendees.json")
 
@@ -44,11 +44,26 @@ router.route("/sendEmail")
 .post(validateBody(), uniqueEmail, async(req, res, next)=> {
     try {
         let writtenData = await writeFile(directory, req.body)
-        res.send(writtenData)
+
+
+        const docDefinition = {
+            content: [`${req.body.firstName}, see you at my birthday barty on Saturday at ${req.body.arrivalTime}`],
+            defaultStyle: {
+                font: 'Helvetica'
+            }
+        };
+        const pdfFolderPath = join(__dirname, `../docs/${req.body.surname}.pdf`)
+       const response = await generatePdf(pdfFolderPath)
+        res.contentType("application/pdf");
+        response.pipe(res);
+        response.end();
+        res.send(response)
+
     }catch (e) {
         e.httpRequestStatusCode = 500;
         next(e);
     }
+
 })
 
 module.exports = router
